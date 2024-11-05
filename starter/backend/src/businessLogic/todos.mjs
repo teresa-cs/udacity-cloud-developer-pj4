@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = 'uuid';
+import pkg from 'uuid';
 import { TodoAccess } from '../dataLayer/todoAccess.mjs';
 import { createLogger } from '../utils/logger.mjs';
 import { AttachmentUtils } from '../fileStorage/attachmentUtils.mjs';
@@ -8,13 +8,16 @@ import { AttachmentUtils } from '../fileStorage/attachmentUtils.mjs';
 const logger = createLogger('TodoAccess');
 const attachmentUtils = new AttachmentUtils();
 const todoAccess = new TodoAccess();
+const { v4: uuidv4 } = pkg;
 
 export const getTodosForUser = async (userId) => {
   return todoAccess.getTodos(userId);
 };
 
 export const createTodo = async (userId, todo) => {
-  const todoId = uuidv4();
+  // const { uuidv4 } = await import('uuid'); // Adjust the path as needed
+
+  const todoId = uuidv4(); // Generates a unique identifier
   logger.info(`Creating todo ${todoId}`);
   const attachmentUrl = attachmentUtils.getAttachmentUrl(todoId);
   return todoAccess.createTodo({
