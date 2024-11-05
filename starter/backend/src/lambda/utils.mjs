@@ -1,4 +1,8 @@
 import { parseUserId } from '../auth/utils.mjs'
+import { createLogger } from '../utils/logger.mjs';
+
+const logger = createLogger('GetUserID');
+
 
 export function getUserId(event) {
   const authorization = event.headers.Authorization
