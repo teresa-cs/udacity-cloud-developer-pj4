@@ -41,7 +41,8 @@ export class TodoAccess {
 
   async updateTodo(userId, todoId, updateData) {
     logger.info(`Updating a todo item: ${todoId}`);
-    await this.docClient
+  
+    const result = await this.docClient
       .update({
         TableName: this.todosTable,
         Key: { userId, todoId },
@@ -52,10 +53,14 @@ export class TodoAccess {
           ':n': updateData.name,
           ':due': updateData.dueDate,
           ':dn': updateData.done
-        }
+        },
+        ReturnValues: 'ALL_NEW' // This makes DynamoDB return the updated item
       })
       .promise();
+    
+    return result.Attributes; // Return the updated item attributes
   }
+  
 
   async deleteTodo(userId, todoId) {
     await this.docClient

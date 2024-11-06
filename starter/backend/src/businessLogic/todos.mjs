@@ -31,6 +31,8 @@ export const createTodo = async (userId, todo) => {
 };
 
 export const updateTodo = async (userId, todoId, todo) => {
+  logger.info(`Updating todo ${todoId}`);
+
   return todoAccess.updateTodo(userId, todoId, todo);
 };
 
