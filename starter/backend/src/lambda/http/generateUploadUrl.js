@@ -43,60 +43,71 @@
 // }
 
 
-import 'source-map-support/register'
-import AWS from 'aws-sdk'
-import AWSXRay from 'aws-xray-sdk'
-import middy from 'middy'
-import { cors } from 'middy/middlewares'
-import { createLogger } from '../../utils/logger.mjs'
-import { TodoAccess } from '../../dataLayer/todoAccess.mjs'
-import { getUserId } from '../utils.mjs'
+require('source-map-support/register');
+const middy = require('middy');
+const { cors } = require('middy/middlewares');
 
-const XAWS = AWSXRay.captureAWS(AWS)
-const bucketName = process.env.S3_BUCKET
-const urlExpiration = Number(process.env.SIGNED_URL_EXPIRATION)
-const s3 = new XAWS.S3({
-  signatureVersion: 'v4'
-})
+module.exports.handler = middy(async (event) => {
+  try {
+    // Dynamically import utilities and dependencies
+    const AWS = (await import('aws-sdk')).default;
+    const AWSXRay = (await import('aws-xray-sdk')).default;
+    const { createLogger } = await import('../../utils/logger.mjs');
+    const { TodoAccess } = await import('../../dataLayer/todoAccess.mjs');
+    const { getUserId } = await import('../utils.mjs');
 
-const todoAccess = new TodoAccess()
-const logger = createLogger('generateUploadUrl')
+    // Initialize AWS SDK with X-Ray tracing
+    const XAWS = AWSXRay.captureAWS(AWS);
+    const bucketName = process.env.S3_BUCKET;
+    const urlExpiration = Number(process.env.SIGNED_URL_EXPIRATION);
+    const s3 = new XAWS.S3({
+      signatureVersion: 'v4'
+    });
 
-export const handler = middy(async (event) => {
-  const todoId = event.pathParameters.todoId
+    // Set up logger and data access layer
+    const logger = createLogger('generateUploadUrl');
+    const todoAccess = new TodoAccess();
 
-  logger.info('Generating upload URL:', {
-    todoId
-  })
+    // Retrieve todoId from path parameters
+    const todoId = event.pathParameters.todoId;
+    logger.info('Generating upload URL:', { todoId });
 
-  const userId = getUserId(event)
+    // Extract userId and generate signed URL
+    const userId = getUserId(event);
+    const uploadUrl = s3.getSignedUrl('putObject', {
+      Bucket: bucketName,
+      Key: todoId,
+      Expires: urlExpiration
+    });
 
-  const uploadUrl = s3.getSignedUrl('putObject', {
-    Bucket: bucketName,
-    Key: todoId,
-    Expires: urlExpiration
-  })
-  
-  logger.info('Generated upload URL:', {
-    todoId,
-    uploadUrl
-  })
+    logger.info('Generated upload URL:', { todoId, uploadUrl });
 
-  await todoAccess.saveImgUrl(userId, todoId, bucketName)
+    // Save the image URL to the data layer
+    await todoAccess.saveImgUrl(userId, todoId, bucketName);
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify({
-      uploadUrl: uploadUrl
-    })
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true
+      },
+      body: JSON.stringify({ uploadUrl })
+    };
+  } catch (error) {
+    const { createLogger } = await import('../../utils/logger.mjs');
+    const logger = createLogger('generateUploadUrl');
+    logger.error('Error generating upload URL', { error: error.message, stack: error.stack });
+
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Failed to generate upload URL.' })
+    };
   }
-})
+});
 
-handler.use(
+module.exports.handler.use(
   cors({
     credentials: true
   })
-)
+);
+
