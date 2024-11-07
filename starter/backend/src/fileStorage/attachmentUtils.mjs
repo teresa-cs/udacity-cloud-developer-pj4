@@ -20,7 +20,9 @@ export class AttachmentUtils {
   getSignedUrl(todoId) {
     return this.s3.getSignedUrlPromise('putObject', {
       Bucket: this.bucketName,
-      Key: todoId,
+      Key: todoId + ".jpg",
+      Body: fileData,
+      ContentType: 'image/jpeg',
       Expires: urlExpiration
     });
   }

@@ -42,20 +42,18 @@
 //   }
 // }
 
-
 require('source-map-support/register');
 const middy = require('middy');
 const { cors } = require('middy/middlewares');
 
 module.exports.handler = middy(async (event) => {
+  // Dynamically import utilities and dependencies
+  const AWS = (await import('aws-sdk')).default;
+  const AWSXRay = (await import('aws-xray-sdk')).default;
+  const { createLogger } = await import('../../utils/logger.mjs');
+  const { TodoAccess } = await import('../../dataLayer/todoAccess.mjs');
+  const { getUserId } = await import('../utils.mjs');
   try {
-    // Dynamically import utilities and dependencies
-    const AWS = (await import('aws-sdk')).default;
-    const AWSXRay = (await import('aws-xray-sdk')).default;
-    const { createLogger } = await import('../../utils/logger.mjs');
-    const { TodoAccess } = await import('../../dataLayer/todoAccess.mjs');
-    const { getUserId } = await import('../utils.mjs');
-
     // Initialize AWS SDK with X-Ray tracing
     const XAWS = AWSXRay.captureAWS(AWS);
     const bucketName = process.env.S3_BUCKET;
@@ -94,8 +92,6 @@ module.exports.handler = middy(async (event) => {
       body: JSON.stringify({ uploadUrl })
     };
   } catch (error) {
-    const { createLogger } = await import('../../utils/logger.mjs');
-    const logger = createLogger('generateUploadUrl');
     logger.error('Error generating upload URL', { error: error.message, stack: error.stack });
 
     return {
@@ -110,4 +106,3 @@ module.exports.handler.use(
     credentials: true
   })
 );
-
