@@ -5,6 +5,7 @@ service: serverless-todo-app
 plugins:
   - serverless-iam-roles-per-function
   - serverless-reqvalidator-plugin
+  - serverless-plugin-tracing
 
 frameworkVersion: '3'
 
@@ -13,7 +14,8 @@ provider:
   runtime: nodejs16.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
-
+  tracing:
+    lambda: true
 
   environment:
     TODOS_TABLE: pj4table-${self:provider.stage}
@@ -23,15 +25,12 @@ provider:
     PROJECT_NAME: Todo
 
   logs:
-    # Enable API Gateway logs
     restApi: true
 
 functions:
-
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
@@ -56,7 +55,6 @@ functions:
           - xray:PutTraceSegments
         Resource: '*'
 
-  # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
@@ -77,9 +75,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
-        Resource:
-          - '*'
-  # TODO: Configure this function
+        Resource: '*'
+
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
@@ -100,10 +97,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
-        Resource:
-          - '*'
+        Resource: '*'
 
-  # TODO: Configure this function
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
@@ -122,10 +117,8 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
-        Resource:
-          - '*'
+        Resource: '*'
 
-  # TODO: Configure this function
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
@@ -148,8 +141,7 @@ functions:
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
-        Resource:
-          - '*'
+        Resource: '*'
 
 resources:
   Resources:
@@ -162,8 +154,6 @@ resources:
         ValidateRequestBody: true
         ValidateRequestParameters: false
 
-
-    # TODO: Add any necessary AWS resources
     GatewayResponseDefault4XX:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
@@ -223,7 +213,6 @@ resources:
           BlockPublicPolicy: false
           RestrictPublicBuckets: false
 
-
     BucketPolicy:
       Type: AWS::S3::BucketPolicy
       Properties:
@@ -237,4 +226,3 @@ resources:
                Principal: '*'
                Action: 's3:GetObject'
                Resource: 'arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*'
-
