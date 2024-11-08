@@ -19,7 +19,7 @@ export const createTodo = async (userId, todo) => {
 
   const todoId = uuidv4(); // Generates a unique identifier
   logger.info(`Creating todo ${todoId}`);
-  const attachmentUrl = attachmentUtils.getAttachmentUrl(todoId);
+  const attachmentUrl = "";
   return todoAccess.createTodo({
     userId,
     todoId,
